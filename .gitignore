@@ -58,3 +58,9 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+/.*
+.DS_Store
+Assets/TextMesh Pro
+Assets/TextMesh Pro.meta
+Assets/Fonts
+Assets/Fonts.meta
