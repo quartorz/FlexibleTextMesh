@@ -6,5 +6,8 @@
     "unity": "2020.3",
     "author": {
         "name": "quartorz"
+    },
+    "dependencies": {
+      "com.unity.textmeshpro": "3.0.6"
     }
 }
