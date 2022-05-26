@@ -89,9 +89,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 
 					var lineVertexIndex = -1;
 
-					var scaleX = width / textWidth;
+					var scale = width / textWidth;
 
-					var xOffset = horizontalAlignment switch
+					var offset = horizontalAlignment switch
 					{
 						HorizontalAlignmentOptions.Geometry => 0f,
 						HorizontalAlignmentOptions.Left => width / 2,
@@ -99,15 +99,6 @@ public class FlexibleTextMesh : TextMeshProUGUI
 						HorizontalAlignmentOptions.Right => -width / 2,
 						_ => 0f
 					};
-
-					var matrix = new Matrix4x4();
-
-					if (!_shrinkLineByLine)
-					{
-						matrix = Matrix4x4.Translate(new Vector3(-xOffset, 0, 0))
-							* Matrix4x4.Scale(new Vector3(scaleX, 1, 1))
-							* Matrix4x4.Translate(new Vector3(xOffset, 0, 0));
-					}
 
 					var hasUnderline = font.HasCharacter('_');
 
@@ -124,18 +115,15 @@ public class FlexibleTextMesh : TextMeshProUGUI
 								continue;
 							}
 
-							scaleX = width / textWidth;
-							xOffset = ((int)alignment & 0b111) switch
+							scale = width / textWidth;
+							offset = horizontalAlignment switch
 							{
-								0b000 => 0f, // GeoAligned
-								0b001 => width / 2, // Left
-								0b010 => 0f, // Center
-								0b100 => -width / 2, // Right
+								HorizontalAlignmentOptions.Geometry => 0f,
+								HorizontalAlignmentOptions.Left => width / 2,
+								HorizontalAlignmentOptions.Center => 0f,
+								HorizontalAlignmentOptions.Right => -width / 2,
 								_ => throw new Exception("bug")
 							};
-							matrix = Matrix4x4.Translate(new Vector3(-xOffset, 0, 0))
-								* Matrix4x4.Scale(new Vector3(scaleX, 1, 1))
-								* Matrix4x4.Translate(new Vector3(xOffset, 0, 0));
 						}
 
 						for (var charIndex = lineInfo.firstCharacterIndex;
@@ -151,8 +139,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 							var meshInfo = textInfo.meshInfo[charInfo.materialReferenceIndex];
 							for (var j = 0; j < 4; ++j)
 							{
-								meshInfo.vertices[charInfo.vertexIndex + j] =
-									matrix.MultiplyPoint(meshInfo.vertices[charInfo.vertexIndex + j]);
+								meshInfo.vertices[charInfo.vertexIndex + j].x += offset;
+								meshInfo.vertices[charInfo.vertexIndex + j].x *= scale;
+								meshInfo.vertices[charInfo.vertexIndex + j].x -= offset;
 							}
 
 							if (!hasUnderline)
@@ -166,8 +155,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 								lineVertexIndex = charInfo.underlineVertexIndex;
 								for (var j = 0; j < 12; ++j)
 								{
-									meshInfo.vertices[lineVertexIndex + j] =
-										matrix.MultiplyPoint(meshInfo.vertices[lineVertexIndex + j]);
+									meshInfo.vertices[lineVertexIndex + j].x += offset;
+									meshInfo.vertices[lineVertexIndex + j].x *= scale;
+									meshInfo.vertices[lineVertexIndex + j].x -= offset;
 								}
 							}
 
@@ -177,8 +167,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 								lineVertexIndex = charInfo.strikethroughVertexIndex;
 								for (var j = 0; j < 12; ++j)
 								{
-									meshInfo.vertices[lineVertexIndex + j] =
-										matrix.MultiplyPoint(meshInfo.vertices[lineVertexIndex + j]);
+									meshInfo.vertices[lineVertexIndex + j].x += offset;
+									meshInfo.vertices[lineVertexIndex + j].x *= scale;
+									meshInfo.vertices[lineVertexIndex + j].x -= offset;
 								}
 							}
 						}
