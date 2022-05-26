@@ -61,8 +61,8 @@ public class FlexibleTextMesh : TextMeshProUGUI
 		}
 	}
 
-	StringBuilder _sb = new StringBuilder();
-	List<int> _indices = new List<int>();
+	readonly StringBuilder _stringBuilder = new StringBuilder();
+	readonly List<int> _indices = new List<int>();
 
 	protected override void GenerateTextMesh()
 	{
@@ -245,8 +245,8 @@ public class FlexibleTextMesh : TextMeshProUGUI
 				{
 					var lineInfo = textInfo.lineInfo[lineCount];
 
-					_sb.Clear();
-					_sb.EnsureCapacity(lineInfo.visibleCharacterCount);
+					_stringBuilder.Clear();
+					_stringBuilder.EnsureCapacity(lineInfo.visibleCharacterCount);
 
 					_indices.Clear();
 					_indices.Capacity = Mathf.Max(_indices.Capacity, lineInfo.visibleCharacterCount);
@@ -260,10 +260,10 @@ public class FlexibleTextMesh : TextMeshProUGUI
 						}
 
 						_indices.Add(j);
-						_sb.Append(charInfo.character);
+						_stringBuilder.Append(charInfo.character);
 					}
 
-					var enumerator = StringInfo.GetTextElementEnumerator(_sb.ToString());
+					var enumerator = StringInfo.GetTextElementEnumerator(_stringBuilder.ToString());
 
 					while (enumerator.MoveNext())
 					{

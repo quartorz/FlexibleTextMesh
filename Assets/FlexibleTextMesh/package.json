@@ -1,6 +1,6 @@
 {
     "name": "red.quart.flexibletextmesh",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "長体をかけたり円形に並べたりできるようにする",
     "displayName": "FlexibleTextMesh",
     "unity": "2020.3",
