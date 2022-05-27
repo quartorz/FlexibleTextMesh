@@ -64,6 +64,8 @@ public class FlexibleTextMesh : TextMeshProUGUI
 	readonly StringBuilder _stringBuilder = new StringBuilder();
 	readonly List<int> _indices = new List<int>();
 
+	readonly Vector3[] _corners = new Vector3[4];
+
 	protected override void GenerateTextMesh()
 	{
 		base.GenerateTextMesh();
@@ -78,99 +80,114 @@ public class FlexibleTextMesh : TextMeshProUGUI
 			for (var lineIndex = 0; lineIndex < textInfo.lineCount; ++lineIndex)
 			{
 				textWidth = Mathf.Max(textWidth, textInfo.lineInfo[lineIndex].length);
+
+				var lineInfo = textInfo.lineInfo[lineIndex];
+				textWidth = Mathf.Max(textWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
 			}
 
 			if (horizontalAlignment != HorizontalAlignmentOptions.Justified
-				&& horizontalAlignment != HorizontalAlignmentOptions.Flush)
+				&& horizontalAlignment != HorizontalAlignmentOptions.Flush
+				&& textWidth > width)
 			{
-				if (textWidth > width)
+				vertexModified = true;
+
+				var lineVertexIndex = -1;
+				var scale = width / textWidth;
+				var pivot = rectTransform.pivot;
+
+				var hasUnderline = font.HasCharacter('_');
+
+				if (horizontalAlignment == HorizontalAlignmentOptions.Left
+					|| horizontalAlignment == HorizontalAlignmentOptions.Right)
 				{
-					vertexModified = true;
+					rectTransform.GetLocalCorners(_corners);
+				}
 
-					var lineVertexIndex = -1;
+				for (var lineIndex = 0; lineIndex < textInfo.lineCount; ++lineIndex)
+				{
+					var lineInfo = textInfo.lineInfo[lineIndex];
 
-					var scale = width / textWidth;
-
-					var offset = horizontalAlignment switch
+					if (lineInfo.visibleCharacterCount == 0)
 					{
-						HorizontalAlignmentOptions.Geometry => 0f,
-						HorizontalAlignmentOptions.Left => width / 2,
-						HorizontalAlignmentOptions.Center => 0f,
-						HorizontalAlignmentOptions.Right => -width / 2,
-						_ => 0f
-					};
+						continue;
+					}
 
-					var hasUnderline = font.HasCharacter('_');
+					float offset, diff;
 
-					for (var lineIndex = 0; lineIndex < textInfo.lineCount; ++lineIndex)
+					switch (horizontalAlignment)
 					{
-						var lineInfo = textInfo.lineInfo[lineIndex];
+						case HorizontalAlignmentOptions.Geometry:
+						case HorizontalAlignmentOptions.Center:
+							offset = diff = 0;
+							break;
+						case HorizontalAlignmentOptions.Left:
+							offset = Mathf.LerpUnclamped(0, width, pivot.x);
+							diff = _corners[0].x - lineInfo.lineExtents.min.x;
+							break;
+						case HorizontalAlignmentOptions.Right:
+							offset = -Mathf.LerpUnclamped(0, width, pivot.x);
+							diff = _corners[2].x - lineInfo.lineExtents.max.x;
+							break;
+						default:
+							throw new Exception();
+					}
 
-						if (_shrinkLineByLine)
+					if (_shrinkLineByLine)
+					{
+						textWidth = lineInfo.length;
+
+						if (textWidth < width)
 						{
-							textWidth = lineInfo.length;
-
-							if (textWidth < width)
-							{
-								continue;
-							}
-
-							scale = width / textWidth;
-							offset = horizontalAlignment switch
-							{
-								HorizontalAlignmentOptions.Geometry => 0f,
-								HorizontalAlignmentOptions.Left => width / 2,
-								HorizontalAlignmentOptions.Center => 0f,
-								HorizontalAlignmentOptions.Right => -width / 2,
-								_ => throw new Exception("bug")
-							};
+							continue;
 						}
 
-						for (var charIndex = lineInfo.firstCharacterIndex;
-							charIndex <= lineInfo.lastCharacterIndex;
-							++charIndex)
+						scale = width / textWidth;
+					}
+
+					for (var charIndex = lineInfo.firstCharacterIndex;
+						charIndex <= lineInfo.lastCharacterIndex;
+						++charIndex)
+					{
+						var charInfo = textInfo.characterInfo[charIndex];
+						if (!charInfo.isVisible)
 						{
-							var charInfo = textInfo.characterInfo[charIndex];
-							if (!charInfo.isVisible)
-							{
-								continue;
-							}
+							continue;
+						}
 
-							var meshInfo = textInfo.meshInfo[charInfo.materialReferenceIndex];
-							for (var j = 0; j < 4; ++j)
-							{
-								meshInfo.vertices[charInfo.vertexIndex + j].x += offset;
-								meshInfo.vertices[charInfo.vertexIndex + j].x *= scale;
-								meshInfo.vertices[charInfo.vertexIndex + j].x -= offset;
-							}
+						var meshInfo = textInfo.meshInfo[charInfo.materialReferenceIndex];
+						for (var j = 0; j < 4; ++j)
+						{
+							meshInfo.vertices[charInfo.vertexIndex + j].x += offset + diff;
+							meshInfo.vertices[charInfo.vertexIndex + j].x *= scale;
+							meshInfo.vertices[charInfo.vertexIndex + j].x -= offset;
+						}
 
-							if (!hasUnderline)
-							{
-								continue;
-							}
+						if (!hasUnderline)
+						{
+							continue;
+						}
 
-							if ((charInfo.style & FontStyles.Underline) == FontStyles.Underline &&
-								charInfo.underlineVertexIndex != lineVertexIndex)
+						if ((charInfo.style & FontStyles.Underline) == FontStyles.Underline &&
+							charInfo.underlineVertexIndex != lineVertexIndex)
+						{
+							lineVertexIndex = charInfo.underlineVertexIndex;
+							for (var j = 0; j < 12; ++j)
 							{
-								lineVertexIndex = charInfo.underlineVertexIndex;
-								for (var j = 0; j < 12; ++j)
-								{
-									meshInfo.vertices[lineVertexIndex + j].x += offset;
-									meshInfo.vertices[lineVertexIndex + j].x *= scale;
-									meshInfo.vertices[lineVertexIndex + j].x -= offset;
-								}
+								meshInfo.vertices[lineVertexIndex + j].x += offset + diff;
+								meshInfo.vertices[lineVertexIndex + j].x *= scale;
+								meshInfo.vertices[lineVertexIndex + j].x -= offset;
 							}
+						}
 
-							if ((charInfo.style & FontStyles.Strikethrough) == FontStyles.Strikethrough &&
-								charInfo.strikethroughVertexIndex != lineVertexIndex)
+						if ((charInfo.style & FontStyles.Strikethrough) == FontStyles.Strikethrough &&
+							charInfo.strikethroughVertexIndex != lineVertexIndex)
+						{
+							lineVertexIndex = charInfo.strikethroughVertexIndex;
+							for (var j = 0; j < 12; ++j)
 							{
-								lineVertexIndex = charInfo.strikethroughVertexIndex;
-								for (var j = 0; j < 12; ++j)
-								{
-									meshInfo.vertices[lineVertexIndex + j].x += offset;
-									meshInfo.vertices[lineVertexIndex + j].x *= scale;
-									meshInfo.vertices[lineVertexIndex + j].x -= offset;
-								}
+								meshInfo.vertices[lineVertexIndex + j].x += offset + diff;
+								meshInfo.vertices[lineVertexIndex + j].x *= scale;
+								meshInfo.vertices[lineVertexIndex + j].x -= offset;
 							}
 						}
 					}
@@ -308,36 +325,36 @@ public class FlexibleTextMesh : TextMeshProUGUI
 
 	void OnDrawGizmosSelected()
 	{
-		if (_curveType != CurveType.None)
+		if (_curveType == CurveType.None)
 		{
-			var corners = new Vector3[4];
-			rectTransform.GetLocalCorners(corners);
-			
-			var matrix = rectTransform.localToWorldMatrix;
+			return;
+		}
 
-			var min = Vector3.Min(corners[0], corners[2]);
-			var max = Vector3.Max(corners[0], corners[2]);
-			var center = new Vector3(
-				Mathf.LerpUnclamped(min.x, max.x, rectTransform.pivot.x),
-				Mathf.LerpUnclamped(min.y, max.y, rectTransform.pivot.y), 0);
+		rectTransform.GetLocalCorners(_corners);
 
-			var top = center + new Vector3(0, _radius, 0);
+		var matrix = rectTransform.localToWorldMatrix;
 
-			var from = new Vector3();
-			var to = matrix.MultiplyPoint(top);
+		var min = Vector3.Min(_corners[0], _corners[2]);
+		var max = Vector3.Max(_corners[0], _corners[2]);
+		var center = new Vector3(
+			Mathf.LerpUnclamped(min.x, max.x, rectTransform.pivot.x),
+			Mathf.LerpUnclamped(min.y, max.y, rectTransform.pivot.y), 0);
 
-			var count = Mathf.Floor(_radius);
-			for (var i = 0; i <= count; ++i)
-			{
-				from = to;
+		var top = center + new Vector3(0, _radius, 0);
 
-				var angle = i * (3.14f * 2) / count;
-				to = matrix.MultiplyPoint(
-					new Vector3(
-						Mathf.Sin(angle) * _radius,
-						Mathf.Cos(angle) * _radius) + center);
-				Gizmos.DrawLine(from, to);
-			}
+		var to = matrix.MultiplyPoint(top);
+
+		var count = Mathf.Floor(_radius);
+		for (var i = 0; i <= count; ++i)
+		{
+			var from = to;
+
+			var angle = i * Mathf.PI * 2 / count;
+			to = matrix.MultiplyPoint(
+				new Vector3(
+					Mathf.Sin(angle) * _radius,
+					Mathf.Cos(angle) * _radius) + center);
+			Gizmos.DrawLine(from, to);
 		}
 	}
 }
