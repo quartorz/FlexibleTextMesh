@@ -318,8 +318,8 @@ public class FlexibleTextMesh : TextMeshProUGUI
 			var min = Vector3.Min(corners[0], corners[2]);
 			var max = Vector3.Max(corners[0], corners[2]);
 			var center = new Vector3(
-				Vector3.LerpUnclamped(min, max, rectTransform.pivot.x).x,
-				Vector3.LerpUnclamped(min, max, rectTransform.pivot.y).y, 0);
+				Mathf.LerpUnclamped(min.x, max.x, rectTransform.pivot.x),
+				Mathf.LerpUnclamped(min.y, max.y, rectTransform.pivot.y), 0);
 
 			var top = center + new Vector3(0, _radius, 0);
 
