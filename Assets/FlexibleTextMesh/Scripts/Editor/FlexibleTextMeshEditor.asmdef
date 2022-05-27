@@ -1,8 +1,10 @@
 {
-    "name": "FlexibleTextMesh",
+    "name": "FlexibleTextMeshEditor",
     "rootNamespace": "",
     "references": [
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.TextMeshPro.Editor",
+        "FlexibleTextMesh"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
