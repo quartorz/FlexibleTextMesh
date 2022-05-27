@@ -305,4 +305,39 @@ public class FlexibleTextMesh : TextMeshProUGUI
 			UpdateVertexData();
 		}
 	}
+
+	void OnDrawGizmosSelected()
+	{
+		if (_curveType != CurveType.None)
+		{
+			var corners = new Vector3[4];
+			rectTransform.GetLocalCorners(corners);
+			
+			var matrix = rectTransform.localToWorldMatrix;
+
+			var min = Vector3.Min(corners[0], corners[2]);
+			var max = Vector3.Max(corners[0], corners[2]);
+			var center = new Vector3(
+				Vector3.LerpUnclamped(min, max, rectTransform.pivot.x).x,
+				Vector3.LerpUnclamped(min, max, rectTransform.pivot.y).y, 0);
+
+			var top = center + new Vector3(0, _radius, 0);
+
+			var from = new Vector3();
+			var to = matrix.MultiplyPoint(top);
+
+			var count = Mathf.Floor(_radius);
+			for (var i = 0; i <= count; ++i)
+			{
+				from = to;
+
+				var angle = i * (3.14f * 2) / count;
+				to = matrix.MultiplyPoint(
+					new Vector3(
+						Mathf.Sin(angle) * _radius,
+						Mathf.Cos(angle) * _radius) + center);
+				Gizmos.DrawLine(from, to);
+			}
+		}
+	}
 }
