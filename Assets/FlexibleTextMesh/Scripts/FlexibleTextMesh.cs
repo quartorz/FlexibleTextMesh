@@ -79,8 +79,6 @@ public class FlexibleTextMesh : TextMeshProUGUI
 
 			for (var lineIndex = 0; lineIndex < textInfo.lineCount; ++lineIndex)
 			{
-				textWidth = Mathf.Max(textWidth, textInfo.lineInfo[lineIndex].length);
-
 				var lineInfo = textInfo.lineInfo[lineIndex];
 				textWidth = Mathf.Max(textWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
 			}
@@ -93,7 +91,7 @@ public class FlexibleTextMesh : TextMeshProUGUI
 
 				var lineVertexIndex = -1;
 				var scale = width / textWidth;
-				var pivot = rectTransform.pivot;
+				var pivotX = Mathf.LerpUnclamped(0, width, rectTransform.pivot.x);
 
 				var hasUnderline = font.HasCharacter('_');
 
@@ -112,21 +110,22 @@ public class FlexibleTextMesh : TextMeshProUGUI
 						continue;
 					}
 
-					float offset, diff;
+					float offset, offset2;
 
 					switch (horizontalAlignment)
 					{
 						case HorizontalAlignmentOptions.Geometry:
 						case HorizontalAlignmentOptions.Center:
-							offset = diff = 0;
+							offset = -(lineInfo.lineExtents.min.x + lineInfo.lineExtents.max.x) / 2;
+							offset2 = pivotX - width / 2;
 							break;
 						case HorizontalAlignmentOptions.Left:
-							offset = Mathf.LerpUnclamped(0, width, pivot.x);
-							diff = _corners[0].x - lineInfo.lineExtents.min.x;
+							offset = -lineInfo.lineExtents.min.x;
+							offset2 = pivotX;
 							break;
 						case HorizontalAlignmentOptions.Right:
-							offset = -Mathf.LerpUnclamped(0, width, pivot.x);
-							diff = _corners[2].x - lineInfo.lineExtents.max.x;
+							offset = -lineInfo.lineExtents.max.x;
+							offset2 = pivotX - width;
 							break;
 						default:
 							throw new Exception();
@@ -134,7 +133,7 @@ public class FlexibleTextMesh : TextMeshProUGUI
 
 					if (_shrinkLineByLine)
 					{
-						textWidth = lineInfo.length;
+						textWidth = lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x;
 
 						if (textWidth < width)
 						{
@@ -157,9 +156,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 						var meshInfo = textInfo.meshInfo[charInfo.materialReferenceIndex];
 						for (var j = 0; j < 4; ++j)
 						{
-							meshInfo.vertices[charInfo.vertexIndex + j].x += offset + diff;
+							meshInfo.vertices[charInfo.vertexIndex + j].x += offset;
 							meshInfo.vertices[charInfo.vertexIndex + j].x *= scale;
-							meshInfo.vertices[charInfo.vertexIndex + j].x -= offset;
+							meshInfo.vertices[charInfo.vertexIndex + j].x -= offset2;
 						}
 
 						if (!hasUnderline)
@@ -173,9 +172,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 							lineVertexIndex = charInfo.underlineVertexIndex;
 							for (var j = 0; j < 12; ++j)
 							{
-								meshInfo.vertices[lineVertexIndex + j].x += offset + diff;
+								meshInfo.vertices[lineVertexIndex + j].x += offset;
 								meshInfo.vertices[lineVertexIndex + j].x *= scale;
-								meshInfo.vertices[lineVertexIndex + j].x -= offset;
+								meshInfo.vertices[lineVertexIndex + j].x -= offset2;
 							}
 						}
 
@@ -185,9 +184,9 @@ public class FlexibleTextMesh : TextMeshProUGUI
 							lineVertexIndex = charInfo.strikethroughVertexIndex;
 							for (var j = 0; j < 12; ++j)
 							{
-								meshInfo.vertices[lineVertexIndex + j].x += offset + diff;
+								meshInfo.vertices[lineVertexIndex + j].x += offset;
 								meshInfo.vertices[lineVertexIndex + j].x *= scale;
-								meshInfo.vertices[lineVertexIndex + j].x -= offset;
+								meshInfo.vertices[lineVertexIndex + j].x -= offset2;
 							}
 						}
 					}
@@ -277,8 +276,8 @@ public class FlexibleTextMesh : TextMeshProUGUI
 					{
 						var element = enumerator.GetTextElement();
 
-						var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
-						var max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+						var min = new Vector2(float.MaxValue, float.MaxValue);
+						var max = new Vector2(float.MinValue, float.MinValue);
 
 						for (var charCount = 0; charCount < element.Length; ++charCount)
 						{
@@ -286,17 +285,17 @@ public class FlexibleTextMesh : TextMeshProUGUI
 							var meshInfo = textInfo.meshInfo[charInfo.materialReferenceIndex];
 							for (var vertexCount = 0; vertexCount < 4; ++vertexCount)
 							{
-								min = Vector3.Min(min, meshInfo.vertices[charInfo.vertexIndex + vertexCount]);
-								max = Vector3.Max(max, meshInfo.vertices[charInfo.vertexIndex + vertexCount]);
+								min = Vector2.Min(min, meshInfo.vertices[charInfo.vertexIndex + vertexCount]);
+								max = Vector2.Max(max, meshInfo.vertices[charInfo.vertexIndex + vertexCount]);
 							}
 						}
 
-						var center = (min + max) / 2;
+						Vector3 center = (min + max) / 2;
 
 						var rad = -center.x / _radius;
 						var sin = Mathf.Sin(rad);
 						var cos = Mathf.Cos(rad);
-						var centerRot = new Vector3(-sin * (center.y + _radius), cos * (center.y + _radius), center.z);
+						var centerRot = new Vector2(-sin * (center.y + _radius), cos * (center.y + _radius));
 
 						for (var charCount = 0; charCount < element.Length; ++charCount)
 						{
@@ -309,7 +308,7 @@ public class FlexibleTextMesh : TextMeshProUGUI
 								var v = meshInfo.vertices[index] - center;
 
 								meshInfo.vertices[index] =
-									centerRot + new Vector3(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
+									centerRot + new Vector2(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
 							}
 						}
 					}
