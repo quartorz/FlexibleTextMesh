@@ -4,7 +4,8 @@
     "references": [
         "Unity.TextMeshPro",
         "Unity.TextMeshPro.Editor",
-        "FlexibleTextMesh"
+        "FlexibleTextMesh",
+        "KyubEditor.EmojiSearch"
     ],
     "includePlatforms": [
         "Editor"
@@ -15,6 +16,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.kyub.emojisearch",
+            "expression": "",
+            "define": "HAS_EMOJI_SEARCH"
+        }
+    ],
     "noEngineReferences": false
 }

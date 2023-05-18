@@ -1,8 +1,5 @@
-using TMPro;
 using TMPro.EditorUtilities;
 using UnityEditor;
-using UnityEngine;
-using UnityEngine.UI;
 
 [CustomEditor(typeof(FlexibleTextMesh))]
 public class FlexibleTextMeshEditor : TMP_EditorPanelUI

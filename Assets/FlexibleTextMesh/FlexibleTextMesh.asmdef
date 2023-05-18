@@ -2,7 +2,8 @@
     "name": "FlexibleTextMesh",
     "rootNamespace": "",
     "references": [
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Kyub.EmojiSearch"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -11,6 +12,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.kyub.emojisearch",
+            "expression": "",
+            "define": "HAS_EMOJI_SEARCH"
+        }
+    ],
     "noEngineReferences": false
 }
